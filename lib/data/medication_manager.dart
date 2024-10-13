@@ -4,13 +4,21 @@ import 'package:medication_tracker/models/prescription_medication.dart';
 
 class MedicationManager extends ChangeNotifier {
   List<Medication> medicationList = [
-    // default medication
+    // default medications
     Medication(
       id: 1,
-      name: "Panadol",
-      time: "5pm",
-      dose: "1 tablet",
-    ), //Medication
+      name: "Aspirin",
+      time: "10:00",
+      dose: "100mg",
+    ), 
+    PrescriptionMedication(
+      id: 1,
+      name: "Sertraline",
+      time: "12:00",
+      dose: "50 mg",
+      doctorName: "John Doe",
+      prescriptionNumber: "RX778899",
+    ),
   ];
 
   // Variable to track the next ID number

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:medication_tracker/data/medication_manager.dart';
 import 'package:medication_tracker/models/prescription_medication.dart';
+import 'package:medication_tracker/pages/login.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -16,11 +17,15 @@ class _HomePageState extends State<HomePage> {
   final doctorNameController = TextEditingController();
   final prescriptionNumberController = TextEditingController();
 
-  bool isPrescription =
-      false; // Flag to check if it's a prescription medication
+  bool isPrescription = false;
+
+  // Function to validate time format (HH:MM)
+  bool isValidTime(String time) {
+    final timeRegex = RegExp(r'^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$');
+    return timeRegex.hasMatch(time);
+  }
 
   void createNewMedication() {
-    // Declare a local state variable for prescription toggle within the dialog
     bool localIsPrescription = false;
 
     showDialog(
@@ -28,69 +33,122 @@ class _HomePageState extends State<HomePage> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
           return AlertDialog(
-            title: Text("Add new medication"),
-            content: Column(
-              mainAxisSize: MainAxisSize.min, // Adjust for small dialogs
-              children: [
-                // Checkbox to toggle between regular and prescription medication
-                Row(
-                  children: [
-                    Checkbox(
-                      value: localIsPrescription,
-                      onChanged: (value) {
-                        setDialogState(() {
-                          localIsPrescription = value!;
-                        });
-                      },
-                    ),
-                    Text("Is Prescription Medication?")
-                  ],
-                ),
-                // Medication name
-                TextField(
-                  controller: medicationNameController,
-                  decoration: InputDecoration(labelText: "Medication Name"),
-                ),
-                // Time
-                TextField(
-                  controller: timeController,
-                  decoration: InputDecoration(labelText: "Time"),
-                ),
-                // Dose
-                TextField(
-                  controller: doseController,
-                  decoration: InputDecoration(labelText: "Dose"),
-                ),
-                // Additional fields for prescription medication
-                if (localIsPrescription) ...[
-                  TextField(
-                    controller: doctorNameController,
-                    decoration: InputDecoration(labelText: "Doctor's Name"),
+            title: Text("Add New Medication",
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: localIsPrescription,
+                        onChanged: (value) {
+                          setDialogState(() {
+                            localIsPrescription = value!;
+                          });
+                        },
+                      ),
+                      const Text("Prescription Medication?")
+                    ],
                   ),
                   TextField(
-                    controller: prescriptionNumberController,
+                    controller: medicationNameController,
                     decoration:
-                        InputDecoration(labelText: "Prescription Number"),
+                        const InputDecoration(labelText: "Medication Name"),
                   ),
+                  TextField(
+                    controller: timeController,
+                    decoration:
+                        const InputDecoration(labelText: "Time (HH:MM)"),
+                  ),
+                  TextField(
+                    controller: doseController,
+                    decoration: const InputDecoration(labelText: "Dose"),
+                  ),
+                  if (localIsPrescription) ...[
+                    TextField(
+                      controller: doctorNameController,
+                      decoration:
+                          const InputDecoration(labelText: "Doctor's Name"),
+                    ),
+                    TextField(
+                      controller: prescriptionNumberController,
+                      decoration: const InputDecoration(
+                          labelText: "Prescription Number"),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
             actions: [
-              MaterialButton(
+              TextButton(
                 onPressed: () {
-                  // Pass the local `isPrescription` flag to the save method
-                  save(localIsPrescription);
+                  if (validateFields(localIsPrescription)) {
+                    save(localIsPrescription);
+                  }
                 },
-                child: Text("Save"),
+                child: const Text("Save"),
               ),
-              MaterialButton(
+              TextButton(
                 onPressed: cancel,
-                child: Text("Cancel"),
+                child:
+                    const Text("Cancel"),
               ),
             ],
           );
         },
       ),
+    );
+  }
+
+  bool validateFields(bool isPrescription) {
+    if (medicationNameController.text.isEmpty) {
+      _showErrorDialog("Medication name cannot be empty.");
+      return false;
+    }
+
+    if (!isValidTime(timeController.text)) {
+      _showErrorDialog("Time must be in HH:MM format.");
+      return false;
+    }
+
+    if (doseController.text.isEmpty) {
+      _showErrorDialog("Dose cannot be empty.");
+      return false;
+    }
+
+    if (isPrescription) {
+      if (doctorNameController.text.isEmpty) {
+        _showErrorDialog("Doctor's name cannot be empty.");
+        return false;
+      }
+      if (prescriptionNumberController.text.isEmpty) {
+        _showErrorDialog("Prescription number cannot be empty.");
+        return false;
+      }
+    }
+
+    return true; // All validations passed
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Error"),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close dialog
+              },
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -100,11 +158,9 @@ class _HomePageState extends State<HomePage> {
     String newDose = doseController.text;
 
     if (isPrescription) {
-      // Get prescription details
       String doctorName = doctorNameController.text;
       String prescriptionNumber = prescriptionNumberController.text;
 
-      // Add prescription medication to MedicationManager
       Provider.of<MedicationManager>(context, listen: false)
           .addPrescriptionMedication(
         newMedicationName,
@@ -114,7 +170,6 @@ class _HomePageState extends State<HomePage> {
         prescriptionNumber,
       );
     } else {
-      // Add regular medication
       Provider.of<MedicationManager>(context, listen: false).addMedication(
         newMedicationName,
         newTime,
@@ -122,114 +177,106 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    // Clear controllers and close the dialog
     clear();
     Navigator.pop(context);
   }
 
-  // edit medication details
   void edit(int index) {
-    // Get the current medication data
     final currentMedication =
         Provider.of<MedicationManager>(context, listen: false)
             .getMedicationList()[index];
 
-    // Pre-fill the fields with current medication data
     medicationNameController.text = currentMedication.name;
     timeController.text = currentMedication.time;
     doseController.text = currentMedication.dose;
 
     if (currentMedication is PrescriptionMedication) {
-      // If it's a prescription medication, also pre-fill the doctor's name and prescription number
       doctorNameController.text = currentMedication.doctorName;
       prescriptionNumberController.text = currentMedication.prescriptionNumber;
       setState(() {
-        isPrescription = true; // Set the flag for prescription medication
+        isPrescription = true;
       });
     } else {
       setState(() {
-        isPrescription = false; // Regular medication
+        isPrescription = false;
       });
     }
 
-    // Show edit dialog
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("Edit medication"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Checkbox to toggle between regular and prescription medication
-            Row(
-              children: [
-                Checkbox(
-                  value: isPrescription,
-                  onChanged: (value) {
-                    setState(() {
-                      isPrescription = value!;
-                    });
-                  },
+        title: Text("Edit Medication",
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Checkbox(
+                    value: isPrescription,
+                    onChanged: (value) {
+                      setState(() {
+                        isPrescription = value!;
+                      });
+                    },
+                  ),
+                  const Text("Prescription Medication?")
+                ],
+              ),
+              TextField(
+                controller: medicationNameController,
+                decoration: const InputDecoration(labelText: "Medication Name"),
+              ),
+              TextField(
+                controller: timeController,
+                decoration: const InputDecoration(labelText: "Time (HH:MM)"),
+              ),
+              TextField(
+                controller: doseController,
+                decoration: const InputDecoration(labelText: "Dose"),
+              ),
+              if (isPrescription) ...[
+                TextField(
+                  controller: doctorNameController,
+                  decoration: const InputDecoration(labelText: "Doctor's Name"),
                 ),
-                Text("Is Prescription Medication?")
+                TextField(
+                  controller: prescriptionNumberController,
+                  decoration:
+                      const InputDecoration(labelText: "Prescription Number"),
+                ),
               ],
-            ),
-            // Medication name
-            TextField(
-              controller: medicationNameController,
-              decoration: InputDecoration(labelText: "Medication Name"),
-            ),
-            // Time
-            TextField(
-              controller: timeController,
-              decoration: InputDecoration(labelText: "Time"),
-            ),
-            // Dose
-            TextField(
-              controller: doseController,
-              decoration: InputDecoration(labelText: "Dose"),
-            ),
-            // Additional fields for prescription medication
-            if (isPrescription) ...[
-              TextField(
-                controller: doctorNameController,
-                decoration: InputDecoration(labelText: "Doctor's Name"),
-              ),
-              TextField(
-                controller: prescriptionNumberController,
-                decoration: InputDecoration(labelText: "Prescription Number"),
-              ),
             ],
-          ],
+          ),
         ),
         actions: [
-          MaterialButton(
+          TextButton(
             onPressed: () {
-              saveEdit(currentMedication.id); // Pass the correct ID
+              if (validateFields(isPrescription)) {
+                saveEdit(currentMedication.id);
+              }
             },
-            child: Text("Save"),
+            child: const Text("Save"),
           ),
-          MaterialButton(
+          TextButton(
             onPressed: cancel,
-            child: Text("Cancel"),
+            child: const Text("Cancel"),
           ),
         ],
       ),
     );
   }
 
-// save edited medication details
   void saveEdit(int id) {
     String updatedName = medicationNameController.text;
     String updatedTime = timeController.text;
     String updatedDose = doseController.text;
 
     if (isPrescription) {
-      // If it's a prescription medication, also capture the updated prescription details
       String updatedDoctorName = doctorNameController.text;
       String updatedPrescriptionNumber = prescriptionNumberController.text;
 
-      // Update the prescription medication
       Provider.of<MedicationManager>(context, listen: false).updateMedication(
         id,
         updatedName,
@@ -239,7 +286,6 @@ class _HomePageState extends State<HomePage> {
         prescriptionNumber: updatedPrescriptionNumber,
       );
     } else {
-      // Update regular medication
       Provider.of<MedicationManager>(context, listen: false).updateMedication(
         id,
         updatedName,
@@ -248,36 +294,28 @@ class _HomePageState extends State<HomePage> {
       );
     }
 
-    // Clear text fields and pop the dialog
     clear();
     Navigator.pop(context);
   }
 
-  // Clear all controllers
   void clear() {
     medicationNameController.clear();
     timeController.clear();
     doseController.clear();
     doctorNameController.clear();
     prescriptionNumberController.clear();
-    isPrescription = false; // Reset the prescription flag
+    isPrescription = false;
   }
 
-  // cancel
   void cancel() {
-    // pop dialog box
     Navigator.pop(context);
     clear();
   }
 
-  // delete medication
   void delete(int index) {
-    // Get the correct ID of the medication to delete
     int id = Provider.of<MedicationManager>(context, listen: false)
         .getMedicationList()[index]
         .id;
-
-    // Remove medication using its ID
     Provider.of<MedicationManager>(context, listen: false).removeMedication(id);
   }
 
@@ -286,67 +324,81 @@ class _HomePageState extends State<HomePage> {
     return Consumer<MedicationManager>(
       builder: (context, value, child) => Scaffold(
         appBar: AppBar(
-          title: const Text("Medication Tracker"),
+          title: const Text("Medication Tracker", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+          backgroundColor: Color.fromARGB(255, 111, 136, 173),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout),
+              color: Colors.white,
+              onPressed: () {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => LoginPage()),
+                );
+              },
+            ),
+          ],
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: createNewMedication,
           child: const Icon(Icons.add),
         ),
-        body: ListView.builder(
-          itemCount: value.getMedicationList().length,
-          itemBuilder: (context, index) {
-            final medication = value.getMedicationList()[index];
+        body: Padding(
+          padding: const EdgeInsets.all(16.0), // Padding around the list
+          child: ListView.builder(
+            itemCount: value.getMedicationList().length,
+            itemBuilder: (context, index) {
+              final medication = value.getMedicationList()[index];
 
-            return Container(
-              color: const Color.fromARGB(255, 181, 195, 217),
-              child: ListTile(
-                title: Text(medication.name),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        // time
-                        Chip(
-                          label: Text(medication.time),
-                        ),
-                        // dose
-                        Chip(
-                          label: Text(medication.dose),
-                        ),
+              return Card(
+                // Use Card widget for a clean card design
+                margin: const EdgeInsets.symmetric(vertical: 8.0),
+                elevation: 4,
+                child: ListTile(
+                  title: Text(medication.name,
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Chip(label: Text(medication.time)),
+                          SizedBox(width: 8), // Add space between chips
+                          Chip(label: Text(medication.dose)),
+                        ],
+                      ),
+                      if (medication is PrescriptionMedication) ...[
+                        Text('Prescribed by Dr. ${medication.doctorName}'),
+                        Text(
+                            'Prescription No: ${medication.prescriptionNumber}'),
                       ],
-                    ),
-                    if (medication is PrescriptionMedication) ...[
-                      // Doctor's name and prescription number for prescription medications
-                      Text('Prescribed by Dr. ${medication.doctorName}'),
-                      Text('Prescription No: ${medication.prescriptionNumber}'),
                     ],
-                  ],
+                  ),
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (String result) {
+                      if (result == 'Edit') {
+                        edit(index);
+                      } else if (result == 'Delete') {
+                        delete(index);
+                      }
+                    },
+                    itemBuilder: (BuildContext context) =>
+                        <PopupMenuEntry<String>>[
+                      const PopupMenuItem<String>(
+                        value: 'Edit',
+                        child: Text('Edit'),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'Delete',
+                        child: Text('Delete'),
+                      ),
+                    ],
+                    icon: const Icon(Icons.more_vert),
+                  ),
                 ),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (String result) {
-                    if (result == 'Edit') {
-                      edit(index);
-                    } else if (result == 'Delete') {
-                      delete(index);
-                    }
-                  },
-                  itemBuilder: (BuildContext context) =>
-                      <PopupMenuEntry<String>>[
-                    const PopupMenuItem<String>(
-                      value: 'Edit',
-                      child: Text('Edit'),
-                    ),
-                    const PopupMenuItem<String>(
-                      value: 'Delete',
-                      child: Text('Delete'),
-                    ),
-                  ],
-                  icon: Icon(Icons.more_vert),
-                ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
