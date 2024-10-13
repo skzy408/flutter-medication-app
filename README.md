@@ -1,48 +1,33 @@
-# Medication Tracker
-
-This is a simple Flutter application that serves as a medication tracker, helping users manage their medication schedules efficiently.
+# Medication Tracker App
 
 ## Project Description
-
-The Medication Tracker app allows users to add, edit, and delete medications while providing essential features like input validation and user feedback.
+This is a simple Flutter application that serves as a medication tracker, allowing users to manage and keep track of their medications easily.
 
 ## Design Choices
 
 ### Data Models
-
-- **Medication Class**: A base class representing general medications. This class contains properties such as `id`, `name`, `time`, and `dose`.
-- **PrescriptionMedication Class**: A subclass of Medication, which includes additional properties specific to prescription medications, such as `doctorName` and `prescriptionNumber`.
-- **MedicationManager Class**: This class acts as a ViewModel, managing the state and data of medications while notifying the UI of changes. This architecture emphasizes separating concerns between the UI and data logic.
+The application features a `Medication` class, which serves as a base class representing general medications. This class includes essential properties such as `id`, `name`, `time`, and `dose`. Additionally, there is a `PrescriptionMedication` class that extends the `Medication` class, incorporating properties specific to prescription medications, such as `doctorName` and `prescriptionNumber`. To manage the state and data of medications effectively, the `MedicationManager` class acts as a ViewModel, separating concerns between the UI and data logic while notifying the UI of any changes.
 
 ### State Management
-
-- **Provider Package**: The application utilizes the Provider package for state management. This allows for efficient data sharing across the widget tree, ensuring the UI updates reactively when the medication list changes.
+For state management, the application utilizes the Provider package. This choice enables efficient data sharing across the widget tree, ensuring that the UI updates reactively when the medication list changes.
 
 ### UI Design
+The UI is built using various Flutter widgets to enhance user experience. The `ListView` widget displays a scrollable list of medications, making it easy for users to browse through their medication list. Each medication is presented in a card format for a clean and organized appearance. The application employs an `AlertDialog` for adding and editing medications, providing a modal interface for user interactions. To promote a user-friendly experience, a floating action button is used to trigger the addition of a new medication. Each medication is also associated with a `PopupMenuButton` for quick access to editing or deleting actions. Input validation is integrated, ensuring that users provide the necessary information before saving a medication. In case of validation failures, error dialogs are displayed.
 
-- **Flutter Widgets**:
-  - **ListView**: Displays a scrollable list of medications, making it easy for users to browse their medication list.
-  - **Card**: Each medication is displayed in a card format for a clean and organized look.
-  - **AlertDialog**: Used for adding and editing medications, providing a modal interface for user interactions.
-  - **Floating Action Button**: A floating action button is used to trigger the addition of a new medication, promoting a user-friendly experience.
-  - **PopupMenuButton**: Each medication has an associated popup menu for editing or deleting, allowing for quick access to these actions.
-- **Input Validation**: Text fields are validated to ensure that users provide the necessary information before saving a medication. Error dialogs are displayed for any validation failures.
+## Additional Features
+The application includes basic form validation for the login screen. Email validation is performed using a regex pattern taken from the RFC2822 Email Validation standard, while passwords are required to be non-empty. On the homepage, time inputs must conform to the HH:MM format, adhering to the 24-hour time notation.
 
-### Additional Features
-
-- **Basic form validation for the login screen**:
-  - **Login Validation**: Email validation regex pattern taken from the RFC2822 Email Validation. Passwords cannot be empty.
-  - **Homepage Validation**: Time must be in the HH:MM format, 24-hour time notation.
-  
 ### Feedback
-
-- **Failure Messages** (e.g., “Enter valid email address.”) for form validation.
+To enhance user experience, failure messages, such as "Enter a valid email address," are displayed for form validation issues.
 
 ## Assumptions
 
-- **Time Format**: It is assumed that the user is familiar with the 24-hour time format (HH:MM) for inputting medication times.
-  
-- **Data Persistence**: The current implementation does not include data persistence. It is assumed that users will manage medications in a session only.
-  
-- **Error Handling**: Basic error handling is implemented, assuming that users will provide valid input. Further enhancement may be required for comprehensive error management.
+### Time Format
+It is assumed that users are familiar with the 24-hour time format (HH:MM) when inputting medication times.
+
+### Data Persistence
+The current implementation does not include data persistence; it is assumed that users will manage their medications within a single session.
+
+### Error Handling
+Basic error handling has been implemented, operating under the assumption that users will provide valid input. Further enhancements may be required for comprehensive error management.
 
